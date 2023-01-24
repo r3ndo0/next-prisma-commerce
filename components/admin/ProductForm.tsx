@@ -1,22 +1,16 @@
 import Image from "next/image";
-import { GetServerSideProps, type NextPage } from "next";
 import { useState, useEffect } from "react";
-import openWidget from "./cloudinaryWidget";
 import handleUpload from "./cloudinaryWidget";
 import { CgClose } from "react-icons/cg";
 import axios from "axios";
 import { useContext } from "react";
 import { optionsType } from "./CategoriesC";
-import { Category, Image as ImageType } from "@prisma/client";
+import { Image as ImageType } from "@prisma/client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  BrandContext,
-  type brandContextType,
-} from "../../pages/admindashboard";
+import { BrandContext } from "../../pages/admindashboard";
 import { Brand } from "@prisma/client";
 import BrandsAC from "./BrandsAC";
-import CategoriesAC from "./CategoriesAC";
 import CategoriesC from "./CategoriesC";
 export type imageRemove = {
   url: string;
@@ -55,13 +49,19 @@ const ProductForm = () => {
       theme: "light",
     });
   const data = useContext(BrandContext);
+  const categoriesFunc = data?.setSelectedCategories as (
+    c: optionsType[]
+  ) => void;
   const categories = data?.selectedCategories;
+  const allBrands = data?.brands as Brand[];
   const brandData = data?.selectedBrand;
+  const brandsFunc = data?.setSelectedBrand as (c: Brand) => void;
   const [images, setImages] = useState<any>([]);
   const [name, setName] = useState("");
   const [color, setColor] = useState("");
   const [quantity, setQuantity] = useState<number | undefined>(0);
   const [price, setPrice] = useState<number | undefined>(0);
+
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (
     e: React.FormEvent<HTMLFormElement>
   ) => {
@@ -86,7 +86,14 @@ const ProductForm = () => {
           const pId = data.id;
           return axios.post("/api/admin/addimages", { images, pId });
         })
-        .then((res) => (res.status === 200 ? notify() : error()));
+        .then((res) => {
+          if (res.status === 200) {
+            notify();
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            error();
+          }
+        });
       return;
     };
     chainRequests();
@@ -123,6 +130,7 @@ const ProductForm = () => {
       <div className="mb-8 text-sm mt-2 w-full h-full flex gap-8 justify-between items-center">
         <div className="flex w-full  flex-col gap-4 justify-between items-center">
           <input
+            value={name}
             onChange={(e) => setName(e.target.value)}
             type="text"
             placeholder="Product Name ..."
@@ -131,18 +139,21 @@ const ProductForm = () => {
           <CategoriesC />
           <BrandsAC />
           <input
+            value={color}
             onChange={(e) => setColor(e.target.value)}
             type="text"
             placeholder="Product Color..."
             className="px-4 w-full rounded-lg h-10"
           ></input>
           <input
+            value={quantity}
             onChange={(e) => setQuantity(parseInt(e.target.value))}
             type="text"
             placeholder="Product Quantity..."
             className="px-4 w-full rounded-lg h-10"
           ></input>
           <input
+            value={price}
             onChange={(e) => setPrice(parseInt(e.target.value))}
             type="text"
             placeholder="Produce Price ..."
@@ -197,10 +208,3 @@ function getCategoriesId(arr: optionsType[]): { id: string }[] {
   });
   return newArr;
 }
-
-// function getImagesId(arr: ImageType[]): { id: string }[] {
-//   const newArr = arr.map((a) => {
-//     return { id: a.id };
-//   });
-//   return newArr;
-// }
